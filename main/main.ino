@@ -3,23 +3,39 @@
 // license information.
 
 #include <ESP8266WiFi.h>
+#include <RTClib.h>
 #include "src/iotc/common/string_buffer.h"
 #include "src/iotc/iotc.h"
 // can be replaced with your own copy #include "config_USER.h in gitignore"
-#include "config.h"
+#include "config_ruft.h"
 #include "Oled.h"
 #include "SensorDHT.h"
+#include "SensorRTC.h"
 
 int delayVal;
 int lastTickDisplay;
 int lastTickDHT;
+int lastTickRTC;
 
  
 char msg_humidity[75];
 char msg_temp[75];
+char msg_hum_temp[75];
 char msg_serial[75];
 char msg_azure[75];
+char msg_rtc[75];
 
+RTC_DS1307 rtc;
+
+char daysOfTheWeek[7][12] = {
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday"
+};
 
 void on_event(IOTContext ctx, IOTCallbackInfo* callbackInfo);
 #include "src/connection.h"
@@ -78,6 +94,9 @@ void setup() {
   connect_wifi(WIFI_SSID, WIFI_PASSWORD);
   connect_client(SCOPE_ID, DEVICE_ID, DEVICE_KEY);
 
+  rtc = sensor_rtc_setup();
+  //rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+
   if (context != NULL) {
     lastTick = 0;  // set timer in the past to enable first telemetry a.s.a.p
     lastTickDisplay = 0;
@@ -129,17 +148,45 @@ float dhtT = readTemperature();
   unsigned long ms_disp = millis();
   if (ms_disp - lastTickDisplay > 5000){
     lastTickDisplay = ms_disp;
-    screen_display("proj:", msg_serial, msg_azure, msg_humidity, msg_temp);
+    screen_display("group3: transport", msg_rtc, msg_azure, msg_humidity, msg_temp, msg_hum_temp);
   }
+
+  unsigned long ms_rtc = millis();
+  if (ms_rtc - lastTickRTC > 5000){
+    lastTickRTC = ms_rtc;
+    DateTime now = rtc.now();
+    snprintf(msg_rtc, 75, "%2d/%2d/%4d %2d:%2d:%2d", now.day(),now.month(),now.year(), now.hour(), now.minute(),now.second());
+    //snprintf(msg_rtc, 75, "%ld/%ld/%ld %ld:%ld", now.day(),now.month(),now.year(), now.hour(),now.minute());
+    Serial.print("Date & Time: ");
+    Serial.println(msg_rtc);
+    /* Serial.print(now.day(), DEC);
+    Serial.print('/');
+    Serial.print(now.month(), DEC);
+    Serial.print('/');
+    Serial.print(now.year(), DEC);
+    Serial.print('/');
+    Serial.print(" (");
+    Serial.print(daysOfTheWeek[now.dayOfTheWeek()]);
+    Serial.print(") ");
+    Serial.print(now.hour(), DEC);
+    Serial.print(':');
+    Serial.print(now.minute(), DEC);
+    Serial.print(':');
+    Serial.println(now.second(), DEC); */
+    //screen_display("proj:", msg_serial, msg_azure, msg_humidity, msg_temp);
+  }
+
 
   unsigned long ms_dht = millis();
   if (ms_dht - lastTickDHT > 5000){
     lastTickDHT = ms_disp;
     //float dhtHumidity = dht.readHumidity();
-    snprintf(msg_humidity, 75, "humidity: %lf", dhtH);
+
+    snprintf(msg_humidity, 75, "h: %3.1f", dhtH);
     // Read temperature in Celsius, for Fahrenheit use .readTempF()
     //float dhtTempC = dht.readTempC();
-    snprintf(msg_temp, 75, "temp (c): %lf", dhtT);
+    snprintf(msg_temp, 75, "t: %3.1f C", dhtT);
+    snprintf(msg_hum_temp, 75, "h: %3.1f %% | t: %3.1f C", dhtH, dhtT);
     //client.publish(outTopic, msg_temp);
     //client.publish(outTopic, msg_humidity);
     Serial.print(F("Humidity: ")); Serial.print(String(dhtH)); Serial.print(F(" [%]\t"));
