@@ -24,14 +24,14 @@ int lastTickPhotoResistor;
 
 char msg_humidity[75];
 char msg_temp[75];
-char msg_hum_temp[22];
+char msg_hum_temp[75];
 char msg_serial[75];
 char msg_azure[75];
 char msg_rtc[75];
-char msg_bme1[22];
-char msg_bme2[22];
-char msg_bme3[22];
-char msg_photores[22];
+char msg_bme1[75];
+char msg_bme2[75];
+char msg_bme3[75];
+char msg_photores[75];
 
 RTC_DS1307 rtc;
 Adafruit_BME680 bme; // I2C
@@ -216,7 +216,7 @@ void loop() {
   if (ms_pres - lastTickPhotoResistor > 5000){
     lastTickPhotoResistor = ms_disp;
     int PhotoResValue = analogRead(SENSORPIN);
-    snprintf(msg_photores, 22, "P_res: %5d", PhotoResValue);
+    snprintf(msg_photores, 75, "P_res: %5d", PhotoResValue);
     Serial.println(String(msg_photores));
   }
 /*int sensorPin A0;
@@ -251,7 +251,7 @@ int lastTickPhotoResistor;*/
       //Serial.print("Humidity = "); Serial.print(bme.humidity); Serial.println(" %");
       //display.print("Humidity: "); display.print(bme.humidity); display.println(" %");
       snprintf(msg_bme2, 75, "BME| P:   %d  hPa", (bme.pressure / 100));
-      Serial.print(String(msg_bme2));
+      Serial.println(String(msg_bme2));
       snprintf(msg_bme3, 75, "BME| Gas:%3.2f KOhms", (bme.gas_resistance/1000.0));
       Serial.print(String(msg_bme3));
     }
