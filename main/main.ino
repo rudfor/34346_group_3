@@ -23,6 +23,7 @@ int lastTickRTC;
 int lastTickBME;
 int lastTickPhotoResistor;
 int lastTickMPU;
+bool alternate = false;
 
 char msg_humidity[75];
 char msg_temp[75];
@@ -170,11 +171,14 @@ void loop() {
  */
 /* Display */
   unsigned long ms_disp = millis();
-  if (ms_disp - lastTickDisplay > 2500){
+  if (ms_disp - lastTickDisplay > 5000 && alternate){
+    lastTickDisplay = ms_disp;
+    alternate = !alternate;
     screen_display("group3: transport", msg_rtc, msg_bme1, msg_bme2, msg_bme3, msg_hum_temp, msg_photores, "");
   }
-  if (ms_disp - lastTickDisplay > 5000){
+  if (ms_disp - lastTickDisplay > 5000 && !alternate){
     lastTickDisplay = ms_disp;
+    alternate = !alternate;
     screen_display("group3: transport", msg_rtc, msg_mpu_accx, msg_mpu_accy, msg_mpu_accz, msg_mpu_gyrx, msg_mpu_gyry, msg_mpu_gyrz);
   }
 
@@ -266,7 +270,7 @@ int lastTickPhotoResistor;*/
       snprintf(msg_bme2, 75, "BME| P:   %d  hPa", (bme.pressure / 100));
       Serial.println(String(msg_bme2));
       snprintf(msg_bme3, 75, "BME| Gas:%3.2f KOhms", (bme.gas_resistance/1000.0));
-      Serial.println(String(msg_bme3));
+      Serial.print(String(msg_bme3));
     }
   }
 
