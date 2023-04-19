@@ -1,7 +1,7 @@
 #include "Oled.h"
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
-void screen_display(String msg_title, String msg_line1, String msg_line2, String msg_line3, String msg_line4, String msg_line5, String msg_line6){
+void screen_display(String msg_title, String msg_line1, String msg_line2, String msg_line3, String msg_line4, String msg_line5, String msg_line6, String msg_line7){
     // Clear the buffer
   display.clearDisplay();
  
@@ -16,6 +16,7 @@ void screen_display(String msg_title, String msg_line1, String msg_line2, String
   display.println(msg_line4.c_str());
   display.println(msg_line5.c_str());
   display.println(msg_line6.c_str());
+  display.println(msg_line7.c_str());
   display.display(); 
 }
 

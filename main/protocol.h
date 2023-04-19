@@ -1,5 +1,6 @@
 #ifndef PROTOCOL_H
 #define PROTOCOL_H
+#include <Arduino.h>
 
 typedef struct configureMessage
 {

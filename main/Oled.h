@@ -81,6 +81,6 @@ void testscrolltext(void);
 void testdrawbitmap(void);
 void testanimate(const uint8_t *bitmap, uint8_t w, uint8_t h);
 
-void screen_display(String msg_title, String msg_line1, String msg_line2, String msg_line3, String msg_line4,String msg_line5,String msg_line6);
+void screen_display(String msg_title, String msg_line1, String msg_line2, String msg_line3, String msg_line4,String msg_line5,String msg_line6, String msg_line7);
 
 #endif

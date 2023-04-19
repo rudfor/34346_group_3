@@ -12,6 +12,7 @@
 #include "SensorDHT.h"
 #include "SensorRTC.h"
 #include "SensorBME680.h"
+#include "SensorMPU6050.h"
 
 #define SENSORPIN A0
 
@@ -21,6 +22,7 @@ int lastTickDHT;
 int lastTickRTC;
 int lastTickBME;
 int lastTickPhotoResistor;
+int lastTickMPU;
 
 char msg_humidity[75];
 char msg_temp[75];
@@ -32,9 +34,16 @@ char msg_bme1[75];
 char msg_bme2[75];
 char msg_bme3[75];
 char msg_photores[75];
+char msg_mpu_accx[75];
+char msg_mpu_accy[75];
+char msg_mpu_accz[75];
+char msg_mpu_gyrx[75];
+char msg_mpu_gyry[75];
+char msg_mpu_gyrz[75];
 
 RTC_DS1307 rtc;
 Adafruit_BME680 bme; // I2C
+Adafruit_MPU6050 mpu; // I2C
 
 char daysOfTheWeek[7][12] = {
   "Sunday",
@@ -105,6 +114,7 @@ void setup() {
 
   rtc = sensor_rtc_setup();
   bme = sensor_bme_680_setup();
+  mpu = sensor_mpu_6050_setup();
   //rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
 
   if (context != NULL) {
@@ -160,9 +170,12 @@ void loop() {
  */
 /* Display */
   unsigned long ms_disp = millis();
+  if (ms_disp - lastTickDisplay > 2500){
+    screen_display("group3: transport", msg_rtc, msg_bme1, msg_bme2, msg_bme3, msg_hum_temp, msg_photores, "");
+  }
   if (ms_disp - lastTickDisplay > 5000){
     lastTickDisplay = ms_disp;
-    screen_display("group3: transport", msg_rtc, msg_bme1, msg_bme2, msg_bme3, msg_hum_temp, msg_photores);
+    screen_display("group3: transport", msg_rtc, msg_mpu_accx, msg_mpu_accy, msg_mpu_accz, msg_mpu_gyrx, msg_mpu_gyry, msg_mpu_gyrz);
   }
 
 /***
@@ -253,7 +266,39 @@ int lastTickPhotoResistor;*/
       snprintf(msg_bme2, 75, "BME| P:   %d  hPa", (bme.pressure / 100));
       Serial.println(String(msg_bme2));
       snprintf(msg_bme3, 75, "BME| Gas:%3.2f KOhms", (bme.gas_resistance/1000.0));
-      Serial.print(String(msg_bme3));
+      Serial.println(String(msg_bme3));
+    }
+  }
+
+/***
+ *      ___                            __  __  ___  _   _  ___   __    __   __   
+ *     / __| ___  _ _   ___ ___  _ _  |  \/  || _ \| | | || __| /  \  / /  /  \  
+ *     \__ \/ -_)| ' \ (_-</ _ \| '_| | |\/| ||  _/| |_| ||__ \| () |/ _ \| () | 
+ *     |___/\___||_||_|/__/\___/|_|   |_|  |_||_|   \___/ |___/ \__/ \___/ \__/  
+ *                                                                               
+ */
+/* Sensor MPU5060 */
+  unsigned long ms_mpu = millis();
+  if (ms_mpu - lastTickMPU > 5000){
+    lastTickMPU = ms_disp;
+    //float dhtHumidity = dht.readHumidity();
+    sensors_event_t a, g, temp;
+    if (! mpu.getEvent(&a,&g,&temp)) {
+        Serial.println("Failed to perform reading :(");
+      }
+    else {
+      snprintf(msg_mpu_accx, 75, "MPU|A x:%2.1f ", a.acceleration.x);
+      Serial.println(String(msg_mpu_accx));
+      snprintf(msg_mpu_accy, 75, "MPU|A y:%2.1f ", a.acceleration.y);
+      Serial.println(String(msg_mpu_accy));
+      snprintf(msg_mpu_accz, 75, "MPU|A z:%2.1f ", a.acceleration.z);
+      Serial.println(String(msg_mpu_accz));
+      snprintf(msg_mpu_gyrx, 75, "MPU|G x:%2.1f", g.gyro.x);
+      Serial.println(String(msg_mpu_gyrx));
+      snprintf(msg_mpu_gyry, 75, "MPU|G y:%2.1f", g.gyro.y);
+      Serial.println(String(msg_mpu_gyry));
+      snprintf(msg_mpu_gyrz, 75, "MPU|G z:%2.1f", g.gyro.z);
+      Serial.println(String(msg_mpu_gyrz));
     }
   }
 
