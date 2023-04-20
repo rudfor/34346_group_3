@@ -11,6 +11,7 @@
 #include "lora_dev_setup.h"
 
 String response;
+String message;
 
 void setup() {
   // Open serial communications and wait for port to open:
@@ -35,7 +36,10 @@ void loop() {
 
   loraSerial.print("radio tx ");
   // send a hex
-  loraSerial.println("6F6F676C7920626F6F676C79");
+
+  // TO-DO read from the sensors and send that instead
+  message = "6F6F676C7920626F6F676C79";
+  loraSerial.println(message);
 
   // we will get two responses from the rn2483
   // this one should be "ok", and it means parameter is valid

@@ -21,6 +21,8 @@ void setup() {
   Serial.println("Initiating LoRa");
   lorawan_setup();
 
+  // TO-DO connect to the azure server
+
   Serial.println("Loop starting");
 }
 
@@ -50,6 +52,7 @@ void loop() {
       // we will get radio_dx <data>
       // read 24 hex characters
       data = response.substring(10, 34);
+      // TO-DO send the message to the azure server
       Serial.println(data);
     }
   } else {
