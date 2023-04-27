@@ -7,7 +7,7 @@
 //#include "src/iotc/common/string_buffer.h"
 //#include "src/iotc/iotc.h"
 // can be replaced with your own copy #include "config_USER.h in gitignore"
-#include "config_ruft.h"
+#include "config.h"
 #include "Oled.h"
 #include "SensorDHT.h"
 #include "SensorRTC.h"
