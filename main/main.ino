@@ -4,6 +4,7 @@
 
 #include <ESP8266WiFi.h>
 #include <RTClib.h>
+#include <string.h>
 //#include "src/iotc/common/string_buffer.h"
 //#include "src/iotc/iotc.h"
 // can be replaced with your own copy #include "config_USER.h in gitignore"
@@ -67,6 +68,10 @@ char msg_mpu_accz[22];
 char msg_mpu_gyrx[22];
 char msg_mpu_gyry[22];
 char msg_mpu_gyrz[22];
+
+String response;
+String message;
+String data;
 
 RTC_DS1307 rtc;
 Adafruit_BME680 bme; // I2C
@@ -139,7 +144,9 @@ if (ms_disp - lastTickMes > 5000) { // TO-DO change to if there is an alert
   loraSerial.print("radio tx ");
   //loraSerial.print(appkey);
   //loraSerial.print(deveui);
-  message = encodeAlertMessage(sensors.TEMPERATURE, true, true, 2047); // TO-DO change this
+  //message = encodeAlertMessage(sensors.TEMPERATURE, true, true, 2047); // TO-DO change this
+  message = "hello";
+  loraSerial.println(message);
 
   // we will get two responses from the rn2483
   // this one should be "ok", and it means parameter is valid
