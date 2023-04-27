@@ -11,7 +11,7 @@ void charArrayToHexString(char *charArray, int length, char *hexString)
     hexString[length * 2] = '\0';
 }
 
-String encodeAlertMessage(sensors sensor, bool priority, bool toohigh, word value)
+String encodeAlertMessage(Sensors sensor, bool priority, bool toohigh, word value)
 {
     char first = (sensor & 0b111) | ((priority & 0b1) << 3) | ((toohigh & 0b1) << 4);
     char msg[3] = {first, (value >> 8) & 0xFF, value & 0xFF};
@@ -25,7 +25,7 @@ String encodeAlertMessage(sensors sensor, bool priority, bool toohigh, word valu
     return hexString;
 }
 
-bool receiveAlertMessage(char *msg, sensors *sensor, bool *priority, bool *toohigh, word *value)
+bool receiveAlertMessage(char *msg, Sensors *sensor, bool *priority, bool *toohigh, word *value)
 {
     if (!msg)
     {
@@ -34,7 +34,7 @@ bool receiveAlertMessage(char *msg, sensors *sensor, bool *priority, bool *toohi
 
     // Extract values from the message
     char first = msg[0];
-    *sensor = first & 0b111;
+    //*sensor = first & 0b111;
     *priority = (first >> 3) & 0b1;
     *toohigh = (first >> 4) & 0b1;
     *value = ((word)msg[1] << 8) | msg[2];
@@ -42,7 +42,7 @@ bool receiveAlertMessage(char *msg, sensors *sensor, bool *priority, bool *toohi
     return true;
 }
 
-configureMessage decodeConfigMessage(char msg[6])
+ConfigureMessage decodeConfigMessage(char msg[6])
 {
     char sensor = msg[0] & 0b111;
     bool state = (msg[0] >> 3) & 0b11;
@@ -56,53 +56,52 @@ configureMessage decodeConfigMessage(char msg[6])
             highPriority = true;
         }
     }
-    configureMessage cmsg = {sensor, on, highPriority, (msg[1] << 8) | msg[2], (msg[3] << 8) | msg[4], msg[5]};
+    ConfigureMessage cmsg = {sensor, on, highPriority, (msg[1] << 8) | msg[2], (msg[3] << 8) | msg[4], msg[5]};
     return cmsg;
 }
 
 String decodeAlertMessage(char *msg)
 {
+    // char sensor = bytes[0] & 0b111;
+    // bool priority = (bytes[0] >> 3) & 0b1;
+    // bool toohigh = (bytes[0] >> 4) & 0b1;
+    // word value = (bytes[1] << 8) | bytes[2];
 
-    char sensor = bytes[0] & 0b111;
-    bool priority = (bytes[0] >> 3) & 0b1;
-    bool toohigh = (bytes[0] >> 4) & 0b1;
-    word value = (bytes[1] << 8) | bytes[2];
-
-    String sensorName;
-    float decodedValue;
-    if (sensor == 1)
-    {
-        sensorName = "PhotoDiode";
-        decodedValue = value;
-    }
-    else if (sensor == 2)
-    {
-        sensorName = "Temperature";
-        decodedValue = (value - 2047) / 10.0;
-    }
-    else if (sensor == 3)
-    {
-        sensorName = "humidity";
-        decodedValue = value;
-    }
-    else if (sensor == 4)
-    {
-        sensorName = "microswitch";
-        decodedValue = value;
-    }
-    else if (sensor == 5)
-    {
-        sensorName = "n3AxisAccelerometer";
-        decodedValue = (value - 4095) / 10.0;
-    }
-    else
-    {
-        return "{\"decoded\":{\"status\":\"error\"}}";
-    }
+    // String sensorName;
+    // float decodedValue;
+    // if (sensor == 1)
+    // {
+    //     sensorName = "PhotoDiode";
+    //     decodedValue = value;
+    // }
+    // else if (sensor == 2)
+    // {
+    //     sensorName = "Temperature";
+    //     decodedValue = (value - 2047) / 10.0;
+    // }
+    // else if (sensor == 3)
+    // {
+    //     sensorName = "humidity";
+    //     decodedValue = value;
+    // }
+    // else if (sensor == 4)
+    // {
+    //     sensorName = "microswitch";
+    //     decodedValue = value;
+    // }
+    // else if (sensor == 5)
+    // {
+    //     sensorName = "n3AxisAccelerometer";
+    //     decodedValue = (value - 4095) / 10.0;
+    // }
+    // else
+    // {
+    //     return "{\"decoded\":{\"status\":\"error\"}}";
+    // }
 
     // Construct JSON object
-    String json = "{\"decoded\":{\"payload\":{\"" + sensorName + "\":" + String(decodedValue, 2) + "},\"status\":\"success\"}}";
-
+    //String json = "{\"decoded\":{\"payload\":{\"" + sensorName + "\":" + String(decodedValue, 2) + "},\"status\":\"success\"}}";
+    String json = "{\"decoded\":{\"payload\":{\"  },\"status\":\"success\"}}";
     // Return JSON as a string
     return json;
 }

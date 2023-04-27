@@ -22,9 +22,9 @@ typedef enum Sensors
 };
 
 void charArrayToHexString(char *charArray, int length, char *hexString);
-String encodeAlertMessage(sensors sensor, bool priority, bool toohigh, word value);
-bool receiveAlertMessage(char *msg, sensors *sensor, bool *priority, bool *toohigh, word *value);
-configureMessage decodeConfigMessage(char msg[6]);
+String encodeAlertMessage(Sensors sensor, bool priority, bool toohigh, word value);
+bool receiveAlertMessage(char *msg, Sensors *sensor, bool *priority, bool *toohigh, word *value);
+ConfigureMessage decodeConfigMessage(char msg[6]);
 String decodeAlertMessage(char *msg);
 int hexToInt(char c);
 
