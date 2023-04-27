@@ -14,7 +14,7 @@
 #include "SensorBME680.h"
 #include "SensorMPU6050.h"
 #include "SDCard.h"
-#include "lora_dev/lora_dev_setup.h"
+#include "lora_dev_setup.h"
 
 #define SENSORPIN A0
 
@@ -90,7 +90,7 @@ void setup() {
   oled_setup();
   setupSD();
   lorawan_setup();
-  
+
   if(RTC) {rtc = sensor_rtc_setup();}
   if(BME) {bme = sensor_bme_680_setup();}
   if(MPU) {mpu = sensor_mpu_6050_setup();}
