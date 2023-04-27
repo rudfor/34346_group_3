@@ -9,6 +9,7 @@
  */
 
 #include "lora_dev_setup.h"
+#include "protocol.h"
 
 String response;
 String message;
@@ -38,7 +39,8 @@ void loop()
   if (true) // TODO, change to: if there is an alert
   {
     loraSerial.print("radio tx ");
-    message = encodeAlertMessage(sensors.TEMPERATURE, true, true, 2047); // TODO change this
+    Sensors sensor = TEMPERATURE;
+    message = encodeAlertMessage(sensor, true, true, 2047); // TODO change this
     loraSerial.println(message);
 
     // we will get two responses from the rn2483

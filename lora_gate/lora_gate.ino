@@ -9,6 +9,7 @@
  */
 
 #include "lora_gate_setup.h"
+#include "protocol.h"
 #include <string.h>
 
 String response;
@@ -57,12 +58,12 @@ void loop()
       // read 24 hex characters
       // ----> why is it 24?
       data = response.substring(10, 34); // what if the response is shorter?
-      char msg[24];
-      for (int i = 0; i < 24; i += 2)
-      {
-        msg[i / 2] = (strtoul(data[i], NULL, 16) << 4) | strtoul(data[i + 1], NULL, 16);
-      }
-      String jsonMsg = decodeAlertMessage(data);
+      // char msg[24];
+      // for (int i = 0; i < 24; i += 2)
+      // {
+      //   msg[i / 2] = (strtoul(data[i], NULL, 16) << 4) | strtoul(data[i + 1]), NULL, 16);
+      // }
+      // String jsonMsg = decodeAlertMessage(data);
       // TO-DO send the message to the azure server
       Serial.println(data);
     }
