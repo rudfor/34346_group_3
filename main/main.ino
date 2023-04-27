@@ -4,43 +4,74 @@
 
 #include <ESP8266WiFi.h>
 #include <RTClib.h>
-#include "src/iotc/common/string_buffer.h"
-#include "src/iotc/iotc.h"
+#include <string.h>
+//#include "src/iotc/common/string_buffer.h"
+//#include "src/iotc/iotc.h"
 // can be replaced with your own copy #include "config_USER.h in gitignore"
-#include "config_ruft.h"
+#include "config.h"
 #include "Oled.h"
 #include "SensorDHT.h"
 #include "SensorRTC.h"
 #include "SensorBME680.h"
 #include "SensorMPU6050.h"
+#include "SDCard.h"
+#include "lora_dev_setup.h"
 
 #define SENSORPIN A0
 
-int delayVal;
 int lastTickDisplay;
 int lastTickDHT;
 int lastTickRTC;
 int lastTickBME;
 int lastTickPhotoResistor;
 int lastTickMPU;
+int lastTickMes;
 bool alternate = false;
+bool sensorRead = false;
 
-char msg_humidity[75];
-char msg_temp[75];
-char msg_hum_temp[75];
-char msg_serial[75];
-char msg_azure[75];
-char msg_rtc[75];
-char msg_bme1[75];
-char msg_bme2[75];
-char msg_bme3[75];
-char msg_photores[75];
-char msg_mpu_accx[75];
-char msg_mpu_accy[75];
-char msg_mpu_accz[75];
-char msg_mpu_gyrx[75];
-char msg_mpu_gyry[75];
-char msg_mpu_gyrz[75];
+int RxDelay1 = 3000;
+int RxDelay2 = 7000;
+
+// Is the Sensor Connected
+bool DHT = true;
+bool RTC = true;
+bool BME = true;
+bool MPU = false;
+bool PR = true;
+bool SDC = true;
+
+bool receiveMode = false;
+
+// Is the Sensor Active
+bool DHT_active = false;
+bool RTC_active = false;
+bool BME_active = false;
+bool MPU_active = false;
+bool PR_active = false;
+bool SDC_format = false;
+bool SDC_active = false;
+
+// Strings for the Messages
+char msg_humidity[22];
+char msg_temp[22];
+char msg_hum_temp[22];
+char msg_serial[22];
+char msg_azure[22];
+char msg_rtc[22];
+char msg_bme1[22];
+char msg_bme2[22];
+char msg_bme3[22];
+char msg_photores[22];
+char msg_mpu_accx[22];
+char msg_mpu_accy[22];
+char msg_mpu_accz[22];
+char msg_mpu_gyrx[22];
+char msg_mpu_gyry[22];
+char msg_mpu_gyrz[22];
+
+String response;
+String message;
+String data;
 
 RTC_DS1307 rtc;
 Adafruit_BME680 bme; // I2C
@@ -56,111 +87,25 @@ char daysOfTheWeek[7][12] = {
   "Saturday"
 };
 
-void on_event(IOTContext ctx, IOTCallbackInfo* callbackInfo);
-#include "src/connection.h"
-
-void on_event(IOTContext ctx, IOTCallbackInfo* callbackInfo) {
-  // ConnectionStatus
-  if (strcmp(callbackInfo->eventName, "ConnectionStatus") == 0) {
-    LOG_VERBOSE("Is connected ? %s (%d)",
-                callbackInfo->statusCode == IOTC_CONNECTION_OK ? "YES" : "NO",
-                callbackInfo->statusCode);
-    isConnected = callbackInfo->statusCode == IOTC_CONNECTION_OK;
-    return;
-  }
-
-  // payload buffer doesn't have a null ending.
-  // add null ending in another buffer before print
-  AzureIOT::StringBuffer buffer;
-  if (callbackInfo->payloadLength > 0) {
-    buffer.initialize(callbackInfo->payload, callbackInfo->payloadLength);
-  }
-
-  LOG_VERBOSE("- [%s] event was received. Payload => %s\n",
-              callbackInfo->eventName, buffer.getLength() ? *buffer : "EMPTY");
-
-  /* TODO
-  Parser code to be added here
-  Commands:
-    sensor <on|off>
-    delay <SET int>
-    read <sensor>
-    write <log>
-    poll // is alive?
-  */
-  if (strcmp(callbackInfo->eventName, "Command") == 0) {
-    LOG_VERBOSE("- Command name was => %s\r\n", callbackInfo->tag);
-    String myString = String(callbackInfo->tag);
-    if(myString.indexOf("DELAY")>=0) {
-      LOG_VERBOSE("- Command name was => %s\r\n", (char*)String("Delay Command").c_str());
-      // Converting const char pointer callbackInfo->tag to a String
-      String myString = String(callbackInfo->tag);
-      // Testing if text string val (e.g 3000) is present in myString
-      //myString.indexOf(3000);
-      String parsedString = myString.substring(5);
-      //LOG_VERBOSE("- Command name was => %s\r\n", callbackInfo->tag);
-      LOG_VERBOSE("- Delay Command => %s\r\n", (char*) parsedString.c_str());
-      delayVal = parsedString.toInt();
-      }    
-  }
-}
 
 void setup() {
-  delayVal = 10000;
+  // turn on Serial
   Serial.begin(9600);
+  // Setup OLED
   oled_setup();
+  setupSD();
+  lorawan_setup();
 
-  connect_wifi(WIFI_SSID, WIFI_PASSWORD);
-  connect_client(SCOPE_ID, DEVICE_ID, DEVICE_KEY);
+  if(RTC) {rtc = sensor_rtc_setup();}
+  if(BME) {bme = sensor_bme_680_setup();}
+  if(MPU) {mpu = sensor_mpu_6050_setup();}
 
-  rtc = sensor_rtc_setup();
-  bme = sensor_bme_680_setup();
-  mpu = sensor_mpu_6050_setup();
-  //rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
-
-  if (context != NULL) {
-    lastTick = 0;  // set timer in the past to enable first telemetry a.s.a.p
-    lastTickDisplay = 0;
- 
-  }
-   DHTbegin();
+  if(DHT) {DHTbegin();}
 }
 
 void loop() {
-
-  /* IOT REMINANCE */
-  if (isConnected) {
-
-    unsigned long ms = millis();
-    if (ms - lastTick > delayVal) {  // send telemetry every 10 seconds
-      char msg[64] = {0};
-      int pos = 0, errorCode = 0;
-
-      lastTick = ms;
-      if (loopId++ % 2 == 0) {  // send telemetry
-        //pos = snprintf(msg, sizeof(msg) - 1, "{\"Temperature\": %f}", dhtT);
-        errorCode = iotc_send_telemetry(context, msg, pos);
-        
-        //pos = snprintf(msg, sizeof(msg) - 1, "{\"Humidity\":%f}", dhtH);
-        errorCode = iotc_send_telemetry(context, msg, pos);
-          
-      } else {  // send property
-        
-      } 
-  
-      msg[pos] = 0;
-
-      if (errorCode != 0) {
-        LOG_ERROR("Sending message has failed with error code %d", errorCode);
-      }
-    }
-
-    iotc_do_work(context);  // do background work for iotc
-  } else {
-    iotc_free_context(context);
-    context = NULL;
-    connect_client(SCOPE_ID, DEVICE_ID, DEVICE_KEY);
-  }
+  sensors_event_t a, g, temp;
+  mpu.getEvent(&a, &g, &temp);
 
 /***
  *      ___   _            _                ___   _          _  
@@ -182,6 +127,87 @@ void loop() {
     screen_display("group3: transport", msg_rtc, msg_mpu_accx, msg_mpu_accy, msg_mpu_accz, msg_mpu_gyrx, msg_mpu_gyry, msg_mpu_gyrz);
   }
 
+/*
+*  _        ___        __  __                      _           
+* | |   ___| _ \__ _  |  \/  |___ ______ __ _ __ _(_)_ _  __ _ 
+* | |__/ _ \   / _` | | |\/| / -_|_-<_-</ _` / _` | | ' \/ _` |
+* |____\___/_|_\__,_| |_|  |_\___/__/__/\__,_\__, |_|_||_\__, |
+*                                            |___/       |___/ 
+*/
+
+unsigned long ms_mes = millis();
+
+if (ms_disp - lastTickMes > 5000) { // TO-DO change to if there is an alert
+  lastTickMes = ms_disp;
+
+  // send a message
+  loraSerial.print("radio tx ");
+  //loraSerial.print(appkey);
+  //loraSerial.print(deveui);
+  //message = encodeAlertMessage(sensors.TEMPERATURE, true, true, 2047); // TO-DO change this
+  message = "hello";
+  loraSerial.println(message);
+
+  // we will get two responses from the rn2483
+  // this one should be "ok", and it means parameter is valid
+  response = loraSerial.readStringUntil('\n');
+  Serial.println(response);
+
+  // this one should be "radio_tx_ok", and it means the transmission was successful
+  response = loraSerial.readStringUntil('\n');
+  Serial.println(response);
+
+  receiveMode = true;
+}
+
+if (ms_disp - lastTickMes > RxDelay1) { 
+  // receive first time
+  loraSerial.println("radio rx 1");
+    delay(20);
+
+    if (response.indexOf("ok") == 0)
+    {
+      // if we are in receive mode, we will wait until we get a message
+      response = String("");
+      while (response == "")
+      {
+        response = loraSerial.readStringUntil('\n');
+      }
+
+      // the second message can either be "radio_rx" or "radio_err"
+      if (response.indexOf("radio_rx") == 0)
+      {
+        data = response.substring(10, 34); // we get the message
+        Serial.println(data); // TO-DO do something with the message
+      }
+    }
+}
+
+if (ms_disp - lastTickMes > RxDelay2) { 
+  // receive second time
+  loraSerial.println("radio rx 1");
+    delay(20);
+
+    if (response.indexOf("ok") == 0)
+    {
+      // if we are in receive mode, we will wait until we get a message
+      response = String("");
+      while (response == "")
+      {
+        response = loraSerial.readStringUntil('\n');
+      }
+
+      // the second message can either be "radio_rx" or "radio_err"
+      if (response.indexOf("radio_rx") == 0)
+      {
+        data = response.substring(10, 34); // we get the message
+        Serial.println(data); // TO-DO do something with the message
+      }
+    }
+
+  receiveMode = false;
+}
+
 /***
  *      ___             _   _____  _                ___  _           _    
  *     | _ \ ___  __ _ | | |_   _|(_) _ __   ___   / __|| | ___  __ | |__ 
@@ -194,8 +220,8 @@ void loop() {
   if (ms_rtc - lastTickRTC > 5000){
     lastTickRTC = ms_rtc;
     DateTime now = rtc.now();
-    snprintf(msg_rtc, 75, "%2d/%2d/%4d %2d:%2d:%2d", now.day(),now.month(),now.year(), now.hour(), now.minute(),now.second());
-    //snprintf(msg_rtc, 75, "%ld/%ld/%ld %ld:%ld", now.day(),now.month(),now.year(), now.hour(),now.minute());
+    snprintf(msg_rtc, 22, "%2d/%2d/%4d %2d:%2d:%2d", now.day(),now.month(),now.year(), now.hour(), now.minute(),now.second());
+    //snprintf(msg_rtc, 22, "%ld/%ld/%ld %ld:%ld", now.day(),now.month(),now.year(), now.hour(),now.minute());
     Serial.print("Date & Time: ");
     Serial.println(msg_rtc);
   }
@@ -213,9 +239,9 @@ void loop() {
     lastTickDHT = ms_disp;
     float dhtH = readHumidity();
     float dhtT = readTemperature();
-    snprintf(msg_humidity, 75, "h: %3.1f", dhtH);
-    snprintf(msg_temp, 75, "t: %3.1f C", dhtT);
-    snprintf(msg_hum_temp, 75, "DHT| h:%3.1f%% t:%3.1fC ", dhtH, dhtT);
+    snprintf(msg_humidity, 22, "h: %3.1f", dhtH);
+    snprintf(msg_temp, 22, "t: %3.1f C", dhtT);
+    snprintf(msg_hum_temp, 22, "DHT| h:%3.1f%% t:%3.1fC ", dhtH, dhtT);
     Serial.println(String(msg_hum_temp));
     //Serial.print(F("Humidity: ")); Serial.print(String(dhtH)); Serial.print(F(" [%]\t"));
    //Serial.print(F("Temp: ")); Serial.print(dhtT); Serial.println(F(" [C]"));
@@ -233,7 +259,7 @@ void loop() {
   if (ms_pres - lastTickPhotoResistor > 5000){
     lastTickPhotoResistor = ms_disp;
     int PhotoResValue = analogRead(SENSORPIN);
-    snprintf(msg_photores, 75, "P_res: %5d", PhotoResValue);
+    snprintf(msg_photores, 22, "P_res: %5d", PhotoResValue);
     Serial.println(String(msg_photores));
   }
 /*int sensorPin A0;
@@ -261,16 +287,16 @@ int lastTickPhotoResistor;*/
       //display.print("Pressure: "); display.print(bme.pressure / 100); display.println(" hPa");
       //Serial.print("Gas = "); Serial.print(bme.gas_resistance / 1000.0); Serial.println(" KOhms");
       //display.print("Gas: "); display.print(bme.gas_resistance / 1000.0); display.println(" KOhms");
-      snprintf(msg_bme1, 75, "BME| h:%3.1f%% t:%3.1fC", bme.humidity, bme.temperature);
+      snprintf(msg_bme1, 22, "BME| h:%3.1f%% t:%3.1fC", bme.humidity, bme.temperature);
       Serial.println(String(msg_bme1));
       //Serial.print("Temperature = "); Serial.print(bme.temperature); Serial.println(" *C");
       //display.print("Temperature: "); display.print(bme.temperature); display.println(" *C");
       //Serial.print("Humidity = "); Serial.print(bme.humidity); Serial.println(" %");
       //display.print("Humidity: "); display.print(bme.humidity); display.println(" %");
-      snprintf(msg_bme2, 75, "BME| P:   %d  hPa", (bme.pressure / 100));
+      snprintf(msg_bme2, 22, "BME| P:   %d  hPa", (bme.pressure / 100));
       Serial.println(String(msg_bme2));
-      snprintf(msg_bme3, 75, "BME| Gas:%3.2f KOhms", (bme.gas_resistance/1000.0));
-      Serial.print(String(msg_bme3));
+      snprintf(msg_bme3, 22, "BME| Gas:%3.2f KOhms", (bme.gas_resistance / 1000.0));
+      Serial.println(String(msg_bme3));
     }
   }
 
@@ -283,25 +309,28 @@ int lastTickPhotoResistor;*/
  */
 /* Sensor MPU5060 */
   unsigned long ms_mpu = millis();
-  if (ms_mpu - lastTickMPU > 5000){
+  if (MPU and ms_mpu - lastTickMPU > 1000){
     lastTickMPU = ms_disp;
+    Serial.println(F("MPU debug1"));
     //float dhtHumidity = dht.readHumidity();
-    sensors_event_t a, g, temp;
-    if (! mpu.getEvent(&a,&g,&temp)) {
+    Serial.println(F("MPU debug2"));
+    if (!sensorRead) {
+        Serial.println(F("MPU debug3"));
         Serial.println("Failed to perform reading :(");
       }
     else {
-      snprintf(msg_mpu_accx, 75, "MPU|A x:%2.1f ", a.acceleration.x);
+      Serial.println(F("MPU debug4"));
+      snprintf(msg_mpu_accx, 22, "MPU|A x:%2.1f ", a.acceleration.x);
       Serial.println(String(msg_mpu_accx));
-      snprintf(msg_mpu_accy, 75, "MPU|A y:%2.1f ", a.acceleration.y);
+      snprintf(msg_mpu_accy, 22, "MPU|A y:%2.1f ", a.acceleration.y);
       Serial.println(String(msg_mpu_accy));
-      snprintf(msg_mpu_accz, 75, "MPU|A z:%2.1f ", a.acceleration.z);
+      snprintf(msg_mpu_accz, 22, "MPU|A z:%2.1f ", a.acceleration.z);
       Serial.println(String(msg_mpu_accz));
-      snprintf(msg_mpu_gyrx, 75, "MPU|G x:%2.1f", g.gyro.x);
+      snprintf(msg_mpu_gyrx, 22, "MPU|G x:%2.1f", g.gyro.x);
       Serial.println(String(msg_mpu_gyrx));
-      snprintf(msg_mpu_gyry, 75, "MPU|G y:%2.1f", g.gyro.y);
+      snprintf(msg_mpu_gyry, 22, "MPU|G y:%2.1f", g.gyro.y);
       Serial.println(String(msg_mpu_gyry));
-      snprintf(msg_mpu_gyrz, 75, "MPU|G z:%2.1f", g.gyro.z);
+      snprintf(msg_mpu_gyrz, 22, "MPU|G z:%2.1f", g.gyro.z);
       Serial.println(String(msg_mpu_gyrz));
     }
   }

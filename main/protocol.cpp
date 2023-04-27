@@ -34,7 +34,11 @@ bool receiveAlertMessage(char *msg, Sensors *sensor, bool *priority, bool *toohi
 
     // Extract values from the message
     char first = msg[0];
+<<<<<<< HEAD
     *sensor = (Sensors)(first & 0b111);
+=======
+    //*sensor = first & 0b111;
+>>>>>>> 7e621939b7cbc3fac8998b152f3487bae5123f30
     *priority = (first >> 3) & 0b1;
     *toohigh = (first >> 4) & 0b1;
     *value = ((word)msg[1] << 8) | msg[2];
@@ -62,7 +66,12 @@ ConfigureMessage decodeConfigMessage(char msg[6])
 
 String decodeAlertMessage(char *msg)
 {
+    // char sensor = bytes[0] & 0b111;
+    // bool priority = (bytes[0] >> 3) & 0b1;
+    // bool toohigh = (bytes[0] >> 4) & 0b1;
+    // word value = (bytes[1] << 8) | bytes[2];
 
+<<<<<<< HEAD
     char sensor = msg[0] & 0b111;
     bool priority = (msg[0] >> 3) & 0b1;
     bool toohigh = (msg[0] >> 4) & 0b1;
@@ -99,10 +108,43 @@ String decodeAlertMessage(char *msg)
     {
         return "{\"decoded\":{\"status\":\"error\"}}";
     }
+=======
+    // String sensorName;
+    // float decodedValue;
+    // if (sensor == 1)
+    // {
+    //     sensorName = "PhotoDiode";
+    //     decodedValue = value;
+    // }
+    // else if (sensor == 2)
+    // {
+    //     sensorName = "Temperature";
+    //     decodedValue = (value - 2047) / 10.0;
+    // }
+    // else if (sensor == 3)
+    // {
+    //     sensorName = "humidity";
+    //     decodedValue = value;
+    // }
+    // else if (sensor == 4)
+    // {
+    //     sensorName = "microswitch";
+    //     decodedValue = value;
+    // }
+    // else if (sensor == 5)
+    // {
+    //     sensorName = "n3AxisAccelerometer";
+    //     decodedValue = (value - 4095) / 10.0;
+    // }
+    // else
+    // {
+    //     return "{\"decoded\":{\"status\":\"error\"}}";
+    // }
+>>>>>>> 7e621939b7cbc3fac8998b152f3487bae5123f30
 
     // Construct JSON object
-    String json = "{\"decoded\":{\"payload\":{\"" + sensorName + "\":" + String(decodedValue, 2) + "},\"status\":\"success\"}}";
-
+    //String json = "{\"decoded\":{\"payload\":{\"" + sensorName + "\":" + String(decodedValue, 2) + "},\"status\":\"success\"}}";
+    String json = "{\"decoded\":{\"payload\":{\"  },\"status\":\"success\"}}";
     // Return JSON as a string
     return json;
 }
