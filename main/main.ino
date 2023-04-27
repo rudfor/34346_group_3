@@ -23,8 +23,12 @@ int lastTickRTC;
 int lastTickBME;
 int lastTickPhotoResistor;
 int lastTickMPU;
+int lastTickMes;
 bool alternate = false;
 bool sensorRead = false;
+
+int RxDelay1 = 3000;
+int RxDelay2 = 7000;
 
 // Is the Sensor Connected
 bool DHT = true;
@@ -33,6 +37,8 @@ bool BME = true;
 bool MPU = false;
 bool PR = true;
 bool SDC = true;
+
+bool receiveMode = false;
 
 // Is the Sensor Active
 bool DHT_active = false;
@@ -112,6 +118,85 @@ void loop() {
     alternate = !alternate;
     screen_display("group3: transport", msg_rtc, msg_mpu_accx, msg_mpu_accy, msg_mpu_accz, msg_mpu_gyrx, msg_mpu_gyry, msg_mpu_gyrz);
   }
+
+/*
+*  _        ___        __  __                      _           
+* | |   ___| _ \__ _  |  \/  |___ ______ __ _ __ _(_)_ _  __ _ 
+* | |__/ _ \   / _` | | |\/| / -_|_-<_-</ _` / _` | | ' \/ _` |
+* |____\___/_|_\__,_| |_|  |_\___/__/__/\__,_\__, |_|_||_\__, |
+*                                            |___/       |___/ 
+*/
+
+unsigned long ms_mes = millis();
+
+if (ms_disp - lastTickMes > 5000) { // TO-DO change to if there is an alert
+  lastTickMes = ms_disp;
+
+  // send a message
+  loraSerial.print("radio tx ");
+  //loraSerial.print(appkey);
+  //loraSerial.print(deveui);
+  message = encodeAlertMessage(sensors.TEMPERATURE, true, true, 2047); // TO-DO change this
+
+  // we will get two responses from the rn2483
+  // this one should be "ok", and it means parameter is valid
+  response = loraSerial.readStringUntil('\n');
+  Serial.println(response);
+
+  // this one should be "radio_tx_ok", and it means the transmission was successful
+  response = loraSerial.readStringUntil('\n');
+  Serial.println(response);
+
+  receiveMode = true;
+}
+
+if (ms_disp - lastTickMes > RxDelay1) { 
+  // receive first time
+  loraSerial.println("radio rx 1");
+    delay(20);
+
+    if (response.indexOf("ok") == 0)
+    {
+      // if we are in receive mode, we will wait until we get a message
+      response = String("");
+      while (response == "")
+      {
+        response = loraSerial.readStringUntil('\n');
+      }
+
+      // the second message can either be "radio_rx" or "radio_err"
+      if (response.indexOf("radio_rx") == 0)
+      {
+        data = response.substring(10, 34); // we get the message
+        Serial.println(data); // TO-DO do something with the message
+      }
+    }
+}
+
+if (ms_disp - lastTickMes > RxDelay2) { 
+  // receive second time
+  loraSerial.println("radio rx 1");
+    delay(20);
+
+    if (response.indexOf("ok") == 0)
+    {
+      // if we are in receive mode, we will wait until we get a message
+      response = String("");
+      while (response == "")
+      {
+        response = loraSerial.readStringUntil('\n');
+      }
+
+      // the second message can either be "radio_rx" or "radio_err"
+      if (response.indexOf("radio_rx") == 0)
+      {
+        data = response.substring(10, 34); // we get the message
+        Serial.println(data); // TO-DO do something with the message
+      }
+    }
+
+  receiveMode = false;
+}
 
 /***
  *      ___             _   _____  _                ___  _           _    
