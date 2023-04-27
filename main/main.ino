@@ -16,6 +16,7 @@
 #include "SensorMPU6050.h"
 #include "SDCard.h"
 #include "lora_dev_setup.h"
+#include "protocol.h"
 
 #define SENSORPIN A0
 
@@ -144,8 +145,9 @@ if (ms_disp - lastTickMes > 5000) { // TO-DO change to if there is an alert
   loraSerial.print("radio tx ");
   //loraSerial.print(appkey);
   //loraSerial.print(deveui);
-  //message = encodeAlertMessage(sensors.TEMPERATURE, true, true, 2047); // TO-DO change this
-  message = "hello";
+    Sensors sensor = TEMPERATURE;
+    message = encodeAlertMessage(sensor, true, true, 2047); // TODO change this
+
   loraSerial.println(message);
 
   // we will get two responses from the rn2483
