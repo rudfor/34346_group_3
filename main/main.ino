@@ -27,19 +27,30 @@ int lastTickBME;
 int lastTickPhotoResistor;
 int lastTickMPU;
 int lastTickMes;
-bool alternate = false;
+int lastTickSD;
+
+bool alternate = false; // Alternate display between 2 screens of values
 bool sensorRead = false;
 
 int RxDelay1 = 3000;
 int RxDelay2 = 7000;
 
+// Timers for frequency / itteration / Duration between: tasks every X milis run the task
+int timerDisplay = 5000;
+int timerDHT = 5000;
+int timerRTC = 5000;
+int timerBME = 5000;
+int timerMPU = 5000;
+int timerPR = 5000;
+int timerSDC = 5000;
+
 // Is the Sensor Connected
-bool DHT = true;
-bool RTC = true;
-bool BME = true;
-bool MPU = false;
-bool PR = true;
-bool SDC = true;
+bool DHT = false; // Removed Duplicate Functionality to the BME680
+bool RTC = true;  // Real Time Clock
+bool BME = true;  //
+bool MPU = false; // MPU - Multi Precision Unit Disabled due to integration error
+bool PR  = true;  // Photo Resistor
+bool SDC = true;  // SDCard
 
 bool receiveMode = false;
 
@@ -90,18 +101,19 @@ char daysOfTheWeek[7][12] = {
 
 
 void setup() {
+  Wire.begin(2,0); // SDA, SCL
   // turn on Serial
   Serial.begin(9600);
   // Setup OLED
   oled_setup();
   setupSD();
-  lorawan_setup();
 
   if(RTC) {rtc = sensor_rtc_setup();}
   if(BME) {bme = sensor_bme_680_setup();}
   if(MPU) {mpu = sensor_mpu_6050_setup();}
 
   if(DHT) {DHTbegin();}
+  lorawan_setup();
 }
 
 void loop() {
@@ -117,15 +129,31 @@ void loop() {
  */
 /* Display */
   unsigned long ms_disp = millis();
-  if (ms_disp - lastTickDisplay > 5000 && alternate){
+  if (ms_disp - lastTickDisplay > timerDisplay && alternate){
     lastTickDisplay = ms_disp;
     alternate = !alternate;
     screen_display("group3: transport", msg_rtc, msg_bme1, msg_bme2, msg_bme3, msg_hum_temp, msg_photores, "");
   }
-  if (ms_disp - lastTickDisplay > 5000 && !alternate){
+  if (ms_disp - lastTickDisplay > timerDisplay && !alternate){
     lastTickDisplay = ms_disp;
     alternate = !alternate;
     screen_display("group3: transport", msg_rtc, msg_mpu_accx, msg_mpu_accy, msg_mpu_accz, msg_mpu_gyrx, msg_mpu_gyry, msg_mpu_gyrz);
+  }
+
+/***
+ *      ___  ___    ___                _  __      __     _  _         
+ *     / __||   \  / __| __ _  _ _  __| | \ \    / /_ _ (_)| |_  ___  
+ *     \__ \| |) || (__ / _` || '_|/ _` |  \ \/\/ /| '_|| ||  _|/ -_) 
+ *     |___/|___/  \___|\__,_||_|  \__,_|   \_/\_/ |_|  |_| \__|\___| 
+ *                                                                    
+ */
+/* SDCard Write */
+  unsigned long ms_sdc = millis();
+  if (ms_sdc - lastTickSD > timerSDC){
+    lastTickSD = ms_sdc;
+    alternate = !alternate;
+    logSD("group3: transport", msg_rtc, msg_bme1, msg_bme2, msg_bme3, msg_hum_temp, msg_photores, "");
+    logSD("group3: transport", msg_rtc, msg_mpu_accx, msg_mpu_accy, msg_mpu_accz, msg_mpu_gyrx, msg_mpu_gyry, msg_mpu_gyrz);
   }
 
 /*
@@ -219,7 +247,7 @@ if (ms_disp - lastTickMes > RxDelay2) {
  */
 /* RTC */
   unsigned long ms_rtc = millis();
-  if (ms_rtc - lastTickRTC > 5000){
+  if (RTC && ms_rtc - lastTickRTC > timerRTC){
     lastTickRTC = ms_rtc;
     DateTime now = rtc.now();
     snprintf(msg_rtc, 22, "%2d/%2d/%4d %2d:%2d:%2d", now.day(),now.month(),now.year(), now.hour(), now.minute(),now.second());
@@ -237,7 +265,7 @@ if (ms_disp - lastTickMes > RxDelay2) {
  */
 /* Sensor DHT 11 */
   unsigned long ms_dht = millis();
-  if (ms_dht - lastTickDHT > 5000){
+  if (ms_dht - lastTickDHT > timerDHT){
     lastTickDHT = ms_disp;
     float dhtH = readHumidity();
     float dhtT = readTemperature();
@@ -258,7 +286,7 @@ if (ms_disp - lastTickMes > RxDelay2) {
  */
 /* Sensor Analog Input Photo Resistor */ 
   unsigned long ms_pres = millis();
-  if (ms_pres - lastTickPhotoResistor > 5000){
+  if (ms_pres - lastTickPhotoResistor > timerPR){
     lastTickPhotoResistor = ms_disp;
     int PhotoResValue = analogRead(SENSORPIN);
     snprintf(msg_photores, 22, "P_res: %5d", PhotoResValue);
@@ -278,7 +306,7 @@ int lastTickPhotoResistor;*/
  */
 /* Sensor BME680 */
   unsigned long ms_bme = millis();
-  if (ms_bme - lastTickBME > 5000){
+  if (ms_bme - lastTickBME > timerBME){
     lastTickBME = ms_disp;
     //float dhtHumidity = dht.readHumidity();
     if (! bme.performReading()) {
@@ -311,7 +339,7 @@ int lastTickPhotoResistor;*/
  */
 /* Sensor MPU5060 */
   unsigned long ms_mpu = millis();
-  if (MPU and ms_mpu - lastTickMPU > 1000){
+  if (MPU and ms_mpu - lastTickMPU > timerMPU){
     lastTickMPU = ms_disp;
     Serial.println(F("MPU debug1"));
     //float dhtHumidity = dht.readHumidity();
@@ -336,7 +364,4 @@ int lastTickPhotoResistor;*/
       Serial.println(String(msg_mpu_gyrz));
     }
   }
-
-
-
 }
