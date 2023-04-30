@@ -117,8 +117,6 @@ void setup() {
 }
 
 void loop() {
-  sensors_event_t a, g, temp;
-  mpu.getEvent(&a, &g, &temp);
 
 /***
  *      ___   _            _                ___   _          _  
@@ -342,7 +340,8 @@ int lastTickPhotoResistor;*/
   if (MPU and ms_mpu - lastTickMPU > timerMPU){
     lastTickMPU = ms_disp;
     Serial.println(F("MPU debug1"));
-    //float dhtHumidity = dht.readHumidity();
+    sensors_event_t a, g, temp;
+    mpu.getEvent(&a, &g, &temp);
     Serial.println(F("MPU debug2"));
     if (!sensorRead) {
         Serial.println(F("MPU debug3"));

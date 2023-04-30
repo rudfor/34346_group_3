@@ -21,11 +21,19 @@
 */
 
 File myFile;
-File logFile;
 
 void logSD(String msg_title, String msg_line1, String msg_line2, String msg_line3, String msg_line4, String msg_line5, String msg_line6, String msg_line7) {
-  if (logFile) {
-    logFile.println("testing 1, 2, 3.");
+  myFile = SD.open("sensors.log", FILE_WRITE);
+  if (myFile) {
+    myFile.print(msg_title.c_str());
+    myFile.print(msg_line1.c_str());
+    myFile.print(msg_line2.c_str());
+    myFile.print(msg_line3.c_str());
+    myFile.print(msg_line4.c_str());
+    myFile.print(msg_line5.c_str());
+    myFile.print(msg_line6.c_str());
+    myFile.println(msg_line7.c_str());
+    myFile.close();
   } else {
     // if the file didn't open, print an error:
     Serial.println("error opening sensors.log");
@@ -80,9 +88,9 @@ void setupSD() {
    *                                                           
    */
   // re-open the file for reading:
-  myFile = SD.open("test.txt");
+  myFile = SD.open("sensors.log");
   if (myFile) {
-    Serial.println("test.txt:");
+    Serial.println("sensors.log:");
 
     // read from the file until there's nothing else in it:
     while (myFile.available()) {
@@ -92,7 +100,7 @@ void setupSD() {
     myFile.close();
   } else {
     // if the file didn't open, print an error:
-    Serial.println("error opening test.txt");
+    Serial.println("error opening sensors.log");
   }
   /***
    *      ___                            _                      _             
@@ -101,6 +109,5 @@ void setupSD() {
    *     |___/\___||_||_|/__/\___/|_|   |____|\___/\__, |\__, ||_||_||_|\__, |
    *                                               |___/ |___/          |___/ 
    */
-  logFile = SD.open("sensors.log", FILE_WRITE);
 
 }
