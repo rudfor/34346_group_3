@@ -60,7 +60,7 @@ ConfigureMessage decodeConfigMessage(char msg[6])
     return cmsg;
 }
 
-String decodeAlertMessage(char *msg)
+String decodeAlertMessage(const char *msg)
 {
     char sensor = msg[0] & 0b111;
     bool priority = (msg[0] >> 3) & 0b1;
