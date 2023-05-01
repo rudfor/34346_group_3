@@ -89,7 +89,7 @@ void setupSD() {
    */
   // re-open the file for reading:
   myFile = SD.open("sensors.log");
-  if (myFile) {
+  if (false && myFile) {
     Serial.println("sensors.log:");
 
     // read from the file until there's nothing else in it:
@@ -99,8 +99,9 @@ void setupSD() {
     // close the file:
     myFile.close();
   } else {
+    myFile.close();
     // if the file didn't open, print an error:
-    Serial.println("error opening sensors.log");
+    // Serial.println("error opening sensors.log");
   }
   /***
    *      ___                            _                      _             

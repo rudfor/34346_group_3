@@ -57,9 +57,9 @@ bool alertBME_temp = false;
 bool alertBME_hum = false;
 bool alertPR = false;
 
-bool sentAlertBME_temp = false;
-bool sentAlertBME_hum = false;
-bool sentAlertPR = false;
+bool sentAlertBME_temp = true;
+bool sentAlertBME_hum = true;
+bool sentAlertPR = true;
 
 // Is the Sensor Connected
 bool DHT = false;  // Removed Duplicate Functionality to the BME680
@@ -190,9 +190,9 @@ void loop() {
 
   unsigned long ms_mes = millis();
 
-  alertBME_temp = ((bmeT > thresBME_temp_max) || (bmeT < thresBME_temp_min)) & !sentAlertBME_temp;
-  alertBME_hum = ((bmeH > thresBME_hum_max) || (bmeH < thresBME_hum_min)) & !sentAlertBME_hum;
-  alertPR = ((PhotoResValue > thresPR_max) || (PhotoResValue < thresPR_min)) & !sentAlertPR;
+  alertBME_temp = ((bmeT > thresBME_temp_max) || (bmeT < thresBME_temp_min)) && !sentAlertBME_temp;
+  alertBME_hum = ((bmeH > thresBME_hum_max) || (bmeH < thresBME_hum_min)) && !sentAlertBME_hum;
+  alertPR = ((PhotoResValue > thresPR_max) || (PhotoResValue < thresPR_min)) && !sentAlertPR;
 
   if (alertBME_temp || alertBME_hum || alertPR) {  // TO-DO change to if there is an alert
     lastTickMes = ms_disp;
@@ -354,7 +354,7 @@ void loop() {
   if (ms_pres - lastTickPhotoResistor > timerPR) {
     lastTickPhotoResistor = ms_disp;
     PhotoResValue = analogRead(SENSORPIN);
-    sentAlertPR;
+    sentAlertPR = false;
     snprintf(msg_photores, 22, "P_res: %5d", PhotoResValue);
     Serial.println(String(msg_photores));
   }
