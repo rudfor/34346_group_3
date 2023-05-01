@@ -12,7 +12,7 @@
 #include <Arduino.h>
 
 String cmd;
-extern SoftwareSerial loraSerial(12, 14);  // TX, RX
+extern SoftwareSerial loraSerial(10, 11);  // TX, RX
 
 void lorawan_setup() {
   loraSerial.begin(9600);  // Serial communication to RN2483

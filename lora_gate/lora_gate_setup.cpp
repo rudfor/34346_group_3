@@ -1,17 +1,17 @@
 /*
  * CONNECTIONS:
- * RN2483 - UNO:
- * TX     - 10
- * RX     - 11
+ * RN2483 - ESP8266:
+ * TX     - D6
+ * RX     - D5
  * 3V3    - 3V3
  * GND    - GND
- *
+ * 
  */
 
 #include <SoftwareSerial.h>
 #include <Arduino.h>
 
-extern SoftwareSerial loraSerial(10, 11);  // TX, RX
+extern SoftwareSerial loraSerial(12, 14);  // TX, RX
 
 void lorawan_setup() {
 
