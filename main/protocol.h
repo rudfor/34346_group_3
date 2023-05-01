@@ -25,7 +25,7 @@ void charArrayToHexString(char *charArray, int length, char *hexString);
 String encodeAlertMessage(Sensors sensor, bool priority, bool toohigh, word value);
 bool receiveAlertMessage(char *msg, Sensors *sensor, bool *priority, bool *toohigh, word *value);
 ConfigureMessage decodeConfigMessage(char msg[6]);
-String decodeAlertMessage(char *msg);
+String decodeAlertMessage(const char *msg);
 int hexToInt(char c);
 
 #endif // PROTOCOL_H
