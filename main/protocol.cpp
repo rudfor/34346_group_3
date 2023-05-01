@@ -96,11 +96,11 @@ String decodeAlertMessage(char *msg)
     }
     else
     {
-        return "{\"decoded\":{\"status\":\"error\"}}";
+        return "{\"status\":\"error\"}";
     }
 
     // Construct JSON object
-    String json = "{\"decoded\":{\"payload\":{\"" + sensorName + "\":" + String(decodedValue, 2) + "},\"status\":\"success\"}}";
+    String json = "{\"" + sensorName + "\":" + String(decodedValue, 2) + "}";
     // Return JSON as a string
     return json;
 }
