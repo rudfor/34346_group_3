@@ -60,6 +60,7 @@ void on_event(IOTContext ctx, IOTCallbackInfo* callbackInfo) {
 
   if (strcmp(callbackInfo->eventName, "Command") == 0) {
     LOG_VERBOSE("- Command name was => %s\r\n", callbackInfo->tag);
+    // add message to buffer
   }
 }
 
@@ -126,8 +127,24 @@ void loop() {
           int errorCode = iotc_send_telemetry(context, decoded.c_str(), strlen(decoded.c_str()));
 
           Serial.println(data);
-          Serial.println(message);
           iotc_do_work(context);  // do background work for iotc
+        }
+        if (messageToSend) {
+          delay(4500); // this seems to work consistently with rxDelay1
+                       // being 5000 on the other side.
+                       // adding an rtc would make it less hacky
+          Serial.println("Sending a message");
+          loraSerial.print("radio tx ");
+          loraSerial.println("deadbeef");
+          // we will get two responses from the rn2483
+          // this one should be "ok", and it means parameter is valid
+          response = loraSerial.readStringUntil('\n');
+          Serial.println(response);
+
+          // this one should be "radio_tx_ok", and it means the transmission was successful
+          response = loraSerial.readStringUntil('\n');
+          Serial.println(response);
+          //messageToSend = false;
         }
       }
     }
@@ -138,12 +155,7 @@ void loop() {
     connect_client(SCOPE_ID, DEVICE_ID, DEVICE_KEY);
   }
 
-  //if (messageToSend) {
-  //  delay(3000);
-  //  {
-  //    loraSerial.println("deadbeef");
-  //  }
-  //}
+
 
 
 

@@ -68,7 +68,7 @@ void lorawan_setup() {
   loraSerial.println("radio set cr 4/5");  // Maximum reliability is 4/8 ~ overhead ratio of 2.0
   cmd = loraSerial.readStringUntil('\n');
 
-  loraSerial.println("radio set wdt 60000");  // disable for continuous reception
+  loraSerial.println("radio set wdt 2000");  // disable for continuous reception
   cmd = loraSerial.readStringUntil('\n');
 
   loraSerial.println("radio set sync 12");
