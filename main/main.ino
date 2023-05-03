@@ -48,9 +48,9 @@ int timerSDC = 5000;
 int thresBME_temp_min = 15;
 int thresBME_temp_max = 25;
 int thresBME_hum_min = 10;
-int thresBME_hum_max = 40;
-int thresPR_min = 0;
-int thresPR_max = 500;
+int thresBME_hum_max = 25;
+int thresPR_min = 500;
+int thresPR_max = 1000;
 
 // alert booleans
 bool alertBME_temp = false;
@@ -69,8 +69,8 @@ bool MPU = false;  // MPU - Multi Precision Unit Disabled due to integration err
 bool PR = true;    // Photo Resistor
 bool SDC = true;   // SDCard
 
-bool receiveMode1 = false; 
-bool receiveMode2 = false; 
+bool receiveMode1 = false;
+bool receiveMode2 = false;
 
 // Is the Sensor Active
 bool DHT_active = false;
@@ -191,15 +191,18 @@ void loop() {
 
   unsigned long ms_mes = millis();
 
-  alertBME_temp = ((bmeT > thresBME_temp_max) || (bmeT < thresBME_temp_min)) && !sentAlertBME_temp;
-  alertBME_hum = ((bmeH > thresBME_hum_max) || (bmeH < thresBME_hum_min)) && !sentAlertBME_hum;
-  alertPR = ((PhotoResValue > thresPR_max) || (PhotoResValue < thresPR_min)) && !sentAlertPR;
+  alertBME_temp = ((bmeT >= thresBME_temp_max) || (bmeT <= thresBME_temp_min)) && !sentAlertBME_temp;
+  alertBME_hum = ((bmeH >= thresBME_hum_max) || (bmeH <= thresBME_hum_min)) && !sentAlertBME_hum;
+  alertPR = ((PhotoResValue >= thresPR_max) || (PhotoResValue <= thresPR_min)) && !sentAlertPR;
 
   if ((alertBME_temp || alertBME_hum || alertPR) && !receiveMode1 && !receiveMode2) {  // TO-DO change to if there is an alert
     lastTickMes = ms_disp;
 
     // send a message
     if (alertBME_temp) {
+      char buffer[40];
+      sprintf(buffer, "ALERT  | Threshold for temperature breached: %.2f not between %d and %d.", bmeT, thresBME_temp_min, thresBME_temp_max);
+      Serial.println(buffer);
       sentAlertBME_temp = true;
       loraSerial.print("radio tx ");
       loraSerial.print(appEUI);
@@ -207,6 +210,7 @@ void loop() {
       message = encodeAlertMessage(TEMPERATURE, true, true, bmeT);
       loraSerial.println(message);
       Serial.println(message);
+
       // we will get two responses from the rn2483
       // this one should be "ok", and it means parameter is valid
       response = loraSerial.readStringUntil('\n');
@@ -217,12 +221,16 @@ void loop() {
       Serial.println(response);
     }
     if (alertBME_hum) {
+      char buffer[40];
+      sprintf(buffer, "ALERT  | Threshold for humidity breached: %.2f not between %d and %d.", bmeH, thresBME_hum_min, thresBME_hum_max);
+      Serial.println(buffer);
       sentAlertBME_hum = true;
       loraSerial.print("radio tx ");
       loraSerial.print(appEUI);
       loraSerial.print(devEUI);
       message = encodeAlertMessage(HUMIDITY, true, true, bmeH);
       loraSerial.println(message);
+
       Serial.println(message);
       // we will get two responses from the rn2483
       // this one should be "ok", and it means parameter is valid
@@ -235,6 +243,9 @@ void loop() {
       delay(20);
     }
     if (alertPR) {
+      char buffer[40];
+      sprintf(buffer, "ALERT  | Threshold for light breached: %d not between %d and %d.", PhotoResValue, thresPR_min, thresPR_max);
+      Serial.println(buffer);
       sentAlertPR = true;
       loraSerial.print("radio tx ");
       loraSerial.print(appEUI);
@@ -257,13 +268,13 @@ void loop() {
   }
 
   if ((ms_disp - lastTickMes > RxDelay1) && receiveMode1) {
-    Serial.println("Going into first receive window.");
+    Serial.println("LoRa   | Going into first receive window.");
     // receive first time
     loraSerial.println("radio rx 0");
     response = loraSerial.readStringUntil('\n');
     delay(20);
     if (response.indexOf("ok") == 0) {
-      
+
       // if we are in receive mode, we will wait until we get a message
       response = String("");
       while (response == "") {
@@ -272,23 +283,24 @@ void loop() {
 
       // the second message can either be "radio_rx" or "radio_err"
       if (response.indexOf("radio_rx") == 0) {
-        Serial.println("Got a message after delay1");
-        data = response.substring(10, 34);  // we get the message
-        Serial.println(data);               // TO-DO do something with the message
+        Serial.println("LoRa   | Got a message after delay1");
+        data = response.substring(10, 12);  // we get the message
+        Serial.println(data);
+        set_thresholds(data);               // TO-DO do something with the message
       }
     }
     receiveMode1 = false;
   }
 
   if ((ms_disp - lastTickMes > RxDelay2) && receiveMode2) {
-    Serial.println("Going into second receive window.");
+    Serial.println("LoRa   | Going into second receive window.");
     // receive second time
     loraSerial.println("radio rx 0");
     response = loraSerial.readStringUntil('\n');
     delay(20);
 
     if (response.indexOf("ok") == 0) {
-      
+
       // if we are in receive mode, we will wait until we get a message
       response = String("");
       while (response == "") {
@@ -297,9 +309,10 @@ void loop() {
 
       // the second message can either be "radio_rx" or "radio_err"
       if (response.indexOf("radio_rx") == 0) {
-        Serial.println("Got a message after delay2");
-        data = response.substring(10, 34);  // we get the message
-        Serial.println(data);               // TO-DO do something with the message
+        Serial.println("LoRa   | Got a message after delay2");
+        data = response.substring(10, 12);  // we get the message
+        Serial.println(data);
+        set_thresholds(data);               // TO-DO do something with the message
       }
     }
 
@@ -320,7 +333,7 @@ void loop() {
     DateTime now = rtc.now();
     snprintf(msg_rtc, 22, "%2d/%2d/%4d %2d:%2d:%2d", now.day(), now.month(), now.year(), now.hour(), now.minute(), now.second());
     //snprintf(msg_rtc, 22, "%ld/%ld/%ld %ld:%ld", now.day(),now.month(),now.year(), now.hour(),now.minute());
-    Serial.print("Date & Time: ");
+    Serial.print("RTC    | ");
     Serial.println(msg_rtc);
   }
 
@@ -339,7 +352,7 @@ void loop() {
     dhtT = readTemperature();
     snprintf(msg_humidity, 22, "h: %3.1f", dhtH);
     snprintf(msg_temp, 22, "t: %3.1f C", dhtT);
-    snprintf(msg_hum_temp, 22, "DHT| h:%3.1f%% t:%3.1fC ", dhtH, dhtT);
+    snprintf(msg_hum_temp, 22, "DHT    | h:%3.1f%% t:%3.1fC ", dhtH, dhtT);
     Serial.println(String(msg_hum_temp));
     //Serial.print(F("Humidity: ")); Serial.print(String(dhtH)); Serial.print(F(" [%]\t"));
     //Serial.print(F("Temp: ")); Serial.print(dhtT); Serial.println(F(" [C]"));
@@ -358,7 +371,7 @@ void loop() {
     lastTickPhotoResistor = ms_disp;
     PhotoResValue = analogRead(SENSORPIN);
     sentAlertPR = false;
-    snprintf(msg_photores, 22, "P_res: %5d", PhotoResValue);
+    snprintf(msg_photores, 22, "P_res  | %5d", PhotoResValue);
     Serial.println(String(msg_photores));
   }
   /*int sensorPin A0;
@@ -389,15 +402,15 @@ int lastTickPhotoResistor;*/
       bmeT = bme.temperature;
       sentAlertBME_temp = false;
       sentAlertBME_hum = false;
-      snprintf(msg_bme1, 22, "BME| h:%3.1f%% t:%3.1fC", bmeH, bmeT);
+      snprintf(msg_bme1, 22, "BME    | h:%3.1f%% t:%3.1fC", bmeH, bmeT);
       Serial.println(String(msg_bme1));
       //Serial.print("Temperature = "); Serial.print(bme.temperature); Serial.println(" *C");
       //display.print("Temperature: "); display.print(bme.temperature); display.println(" *C");
       //Serial.print("Humidity = "); Serial.print(bme.humidity); Serial.println(" %");
       //display.print("Humidity: "); display.print(bme.humidity); display.println(" %");
-      snprintf(msg_bme2, 22, "BME| P:   %d  hPa", (bme.pressure / 100));
+      snprintf(msg_bme2, 22, "BME    | P:   %d  hPa", (bme.pressure / 100));
       Serial.println(String(msg_bme2));
-      snprintf(msg_bme3, 22, "BME| Gas:%3.2f KOhms", (bme.gas_resistance / 1000.0));
+      snprintf(msg_bme3, 22, "BME    | Gas:%3.2f KOhms", (bme.gas_resistance / 1000.0));
       Serial.println(String(msg_bme3));
     }
   }
@@ -435,5 +448,36 @@ int lastTickPhotoResistor;*/
       snprintf(msg_mpu_gyrz, 22, "MPU|G z:%2.1f", g.gyro.z);
       Serial.println(String(msg_mpu_gyrz));
     }
+  }
+}
+
+void set_thresholds(String command) {
+  Serial.println(command);
+  if (command == "01") {
+    Serial.println("CTRL   | Thresholds have been set to match: Painting.");
+    thresBME_temp_min = 15;
+    thresBME_temp_max = 25;
+    thresBME_hum_min = 10;
+    thresBME_hum_max = 25;
+    thresPR_min = 500;
+    thresPR_max = 1000;
+  } else if (command == "02") {
+    Serial.println("CTRL   | Thresholds have been set to match: Plant.");
+    thresBME_temp_min = 20;
+    thresBME_temp_max = 30;
+    thresBME_hum_min = 30;
+    thresBME_hum_max = 50;
+    thresPR_min = 0;
+    thresPR_max = 300;
+  } else if (command == "03") {
+    Serial.println("CTRL   | Thresholds have been set to match: Animal.");
+    thresBME_temp_min = 15;
+    thresBME_temp_max = 25;
+    thresBME_hum_min = 20;
+    thresBME_hum_max = 35;
+    thresPR_min = 0;
+    thresPR_max = 500;
+  } else {
+    Serial.println("CTRL   | Unknown command from the gateway received.");
   }
 }
