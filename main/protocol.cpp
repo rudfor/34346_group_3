@@ -60,8 +60,16 @@ ConfigureMessage decodeConfigMessage(char msg[6])
     return cmsg;
 }
 
-String decodeAlertMessage(const char *msg)
+String decodeAlertMessage(const char *msgstr)
 {
+    char msg[3];
+    const char *pos = msgstr;
+    for (int count = 0; count < 3; count++)
+    {
+        sscanf(pos, "%2hhx", &msg[count]);
+        pos += 2;
+    }
+
     char sensor = msg[0] & 0b111;
     bool priority = (msg[0] >> 3) & 0b1;
     bool toohigh = (msg[0] >> 4) & 0b1;
