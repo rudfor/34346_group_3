@@ -1,11 +1,54 @@
-# ESP8266 basic example for Azure IoT Central
+# Package Tracking Monitor
+## 34346 Networking technologies and application development for Internet of Things
+
+Project for DTU by: 
+- s221652 - Erik Gottschalk
+- s221856 - Juan Marin Collado
+- s220019 - Sindhuja Ramamoorthy
+- s183934 - Gustav Juul Jørgensen
+- s137353 - Rudolf Anton Fortes
+
+Simple IoT package tracker and monitor
+Consists of Client with sensors relaying warnings to a hub 
+
+## Package tracker P2P client
+
+- Compile the sensors_lora
+- Setup the wiring similar to this
+  - breadboard example:
+![Alt text](images/BreadBoard.png?raw=true "BreadBoard")
+  - Schematic example:
+![Alt text](images/SchematicAltium.png?raw=true "Schematic")
+  - Schematic example2:
+![Alt text](images/SchematicFritzing.png?raw=true "Schematic")
+- Ensure you have the followin libraries insttalled
+```
+Name                      Installed                                
+Adafruit_BME680_Library   2.0 2                                              
+Adafruit_BusIO            1.14.1                                             
+Adafruit_GFX_Library      1.11.5                                             
+Adafruit_MPU6050          2.2.3                                             
+Adafruit_SSD1306          2.5.7                                             
+Adafruit_Unified_Sensor   1.1.9                                             
+AllThingsTalk_LoRaWAN_SDK 3.1.6                                             
+AnalogRTCLib              1.0.0                                              
+DHT_sensor_library        1.4.4                                              
+DS1307RTC                 1.4        
+DS3231                    1.1.2                                              
+RTClib                    2.1.1                                              
+SD                        1.2.3       
+TheThingsNetwork          2.7.2           
+ThingsIoT                 1.2.0     
+```
+
+## IoT Hub LoRa P2P server
 
 - Visit [AzureIoTCentral](https://apps.azureiotcentral.com) and create a `new application`.
 - Select `Sample Devkits`
 - Add a new `mxchip` device. (a real device) (under `Device Explorer`)
 - Browse into device UI (by clicking to name of the device under `Device explorer`)
 - Click/open `Connect` at top-right of the device UI
-- Grab `scopeId`, `device Id` and `primary key` and fill the necessary parts under `ESP8266.ino`
+- Grab `scopeId`, `device Id` and `primary key` and fill the necessary parts under `gate_lora/lora_gate.ino`
 
 ```
 #define WIFI_SSID "<ENTER WIFI SSID HERE>"
@@ -15,6 +58,8 @@ const char* SCOPE_ID = "<ENTER SCOPE ID HERE>";
 const char* DEVICE_ID = "<ENTER DEVICE ID HERE>";
 const char* DEVICE_KEY = "<ENTER DEVICE primary/secondary KEY HERE>";
 ```
+
+## Tips and Tools
 
 Compile it! and deploy to your device. (see below)
 
